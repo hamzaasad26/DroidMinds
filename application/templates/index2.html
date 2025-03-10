@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Image Classifier</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Link to CSS file using Flask's url_for -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h1><i class="fas fa-brain"></i> DroidMinds Retinopathy Diabetes Detection and Classifier</h1>
+            <p class="subtitle">Drop your image or click to upload</p>
+            
+            <form action="/predict" method="post" enctype="multipart/form-data" id="upload-form">
+                <div class="upload-area" id="drop-zone">
+                    <input type="file" name="file" id="file-input" accept="image/*" hidden>
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Drag & Drop your image here</p>
+                        <span class="or">OR</span>
+                        <button type="button" class="browse-btn">Browse Files</button>
+                    </div>
+                    <div class="preview-container" hidden>
+                        <img id="preview-image" src="" alt="Preview">
+                        <div class="remove-preview">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="classify-btn" disabled>
+                    <i class="fas fa-magic"></i> Classify Image
+                </button>
+            </form>
+            
+            <div class="loading-spinner" hidden>
+                <div class="spinner"></div>
+                <p>Processing your image...</p>
+            </div>
+            <div class="result" hidden>
+                <h2>Predicted Class: <span id="predicted-class"></span></h2>
+            </div>
+        </div>
+    </div>
+    <!-- Link to JS file using Flask's url_for -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            document.querySelector('.loading-spinner').hidden = false;
+            document.querySelector('.result').hidden = true;
+            document.querySelector('.classify-btn').disabled = true;
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                document.querySelector('.loading-spinner').hidden = true;
+                document.querySelector('.classify-btn').disabled = false;
+
+                if (response.ok) {
+                    document.getElementById('predicted-class').textContent = result.class;
+                    document.querySelector('.result').hidden = false;
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while processing your request.');
+                document.querySelector('.loading-spinner').hidden = true;
+                document.querySelector('.classify-btn').disabled = false;
+            }
+        });
+
+        document.querySelector('.browse-btn').addEventListener('click', function() {
+            document.getElementById('file-input').click();
+        });
+
+        document.getElementById('file-input').addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-image').src = e.target.result;
+                    document.querySelector('.preview-container').hidden = false;
+                    document.querySelector('.classify-btn').disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.querySelector('.remove-preview').addEventListener('click', function() {
+            document.getElementById('file-input').value = '';
+            document.querySelector('.preview-container').hidden = true;
+            document.querySelector('.classify-btn').disabled = true;
+        });
+    </script>
+</body>
+
+</html>
